@@ -1,0 +1,290 @@
+/* ================================================================
+   כתבי יונתן יהודה ז"ל — עיצוב
+   ================================================================ */
+
+:root{
+  --paper:      #FBF8F2;
+  --paper-warm: #F6F1E6;
+  --card:       #FFFDF9;
+  --ink:        #2E2A25;
+  --ink-soft:   #6E655A;
+  --ink-faint:  #9A9084;
+  --gold:       #A4823C;
+  --gold-soft:  #C9AE74;
+  --rule:       #E7DFCE;
+  --shadow:     0 1px 2px rgba(70,58,40,.04), 0 8px 28px rgba(70,58,40,.06);
+  --shadow-lift:0 2px 6px rgba(70,58,40,.06), 0 18px 44px rgba(70,58,40,.10);
+  --radius:     14px;
+  --measure:    34rem;
+  color-scheme: light;
+}
+
+*{box-sizing:border-box}
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Frank Ruhl Libre", "David Libre", David, "Times New Roman", serif;
+  font-size:18px;
+  line-height:1.85;
+  direction:rtl;
+  text-align:right;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* רקע נייר עדין מאוד */
+body::before{
+  content:"";
+  position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(201,174,116,.10), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(164,130,60,.07), transparent 60%);
+}
+
+a{color:inherit}
+img{max-width:100%; height:auto; display:block}
+
+.ui{font-family:"Assistant","Segoe UI",system-ui,sans-serif}
+
+/* ---------------- ניווט ---------------- */
+.nav{
+  position:sticky; top:0; z-index:50;
+  background:rgba(251,248,242,.86);
+  backdrop-filter:saturate(140%) blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.nav-in{
+  max-width:60rem; margin:0 auto; padding:.55rem 1.1rem;
+  display:flex; align-items:center; gap:1.1rem; flex-wrap:wrap;
+}
+.brand{
+  font-weight:700; font-size:1.02rem; letter-spacing:.01em;
+  text-decoration:none; color:var(--ink); white-space:nowrap;
+}
+.brand span{color:var(--gold); font-weight:500}
+.nav ul{
+  list-style:none; display:flex; gap:.15rem; margin:0; padding:0;
+  margin-inline-start:auto; flex-wrap:wrap;
+}
+.nav a.lnk{
+  font-family:"Assistant",system-ui,sans-serif;
+  font-size:.95rem; text-decoration:none; color:var(--ink-soft);
+  padding:.34rem .7rem; border-radius:999px; display:block;
+  transition:background .18s, color .18s;
+}
+.nav a.lnk:hover{background:var(--paper-warm); color:var(--ink)}
+.nav a.lnk[aria-current="page"]{background:var(--paper-warm); color:var(--gold); font-weight:600}
+
+/* ---------------- מבנה ---------------- */
+.wrap{max-width:60rem; margin:0 auto; padding:0 1.1rem}
+.narrow{max-width:var(--measure); margin-inline:auto}
+section{margin:3.4rem 0}
+hr.soft{border:0; border-top:1px solid var(--rule); margin:2.6rem 0}
+
+h1,h2,h3{line-height:1.35; font-weight:700; margin:0 0 .6rem}
+h1{font-size:2.1rem; letter-spacing:-.01em}
+h2{font-size:1.42rem}
+h3{font-size:1.12rem}
+p{margin:0 0 1.15em}
+
+.lead{font-size:1.09rem; color:var(--ink-soft)}
+.muted{color:var(--ink-soft)}
+.faint{color:var(--ink-faint)}
+
+.eyebrow{
+  font-family:"Assistant",system-ui,sans-serif;
+  font-size:.78rem; letter-spacing:.16em; text-transform:none;
+  color:var(--gold); font-weight:600; margin-bottom:.5rem;
+}
+
+/* ---------------- עמוד הבית ---------------- */
+.hero{padding:3.2rem 0 1rem; text-align:center}
+.portrait{
+  width:min(320px, 74vw); aspect-ratio:1; margin:0 auto 1.6rem;
+  border-radius:50%; overflow:hidden;
+  box-shadow:var(--shadow-lift);
+  border:5px solid #fff;
+}
+.portrait img{width:100%; height:100%; object-fit:cover; object-position:50% 22%}
+.hero h1{font-size:2.5rem; margin-bottom:.35rem}
+.hero .dates{
+  font-family:"Assistant",system-ui,sans-serif; font-size:.98rem;
+  color:var(--ink-soft); letter-spacing:.01em;
+}
+.hero .dates b{font-weight:600; color:var(--ink)}
+.ornament{
+  display:block; margin:1.8rem auto; width:120px; height:auto; opacity:.5;
+}
+
+.intro{
+  max-width:var(--measure); margin:0 auto; font-size:1.06rem; text-align:right;
+}
+.intro p:last-child{margin-bottom:0}
+
+/* ---------------- כרטיסים ---------------- */
+.grid{display:grid; gap:1rem; grid-template-columns:repeat(auto-fill, minmax(255px,1fr))}
+.card{
+  background:var(--card); border:1px solid var(--rule); border-radius:var(--radius);
+  padding:1.15rem 1.25rem 1.05rem; box-shadow:var(--shadow);
+  text-decoration:none; color:inherit; display:flex; flex-direction:column;
+  transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+a.card:hover{transform:translateY(-2px); box-shadow:var(--shadow-lift); border-color:var(--gold-soft)}
+.card h3{margin:0 0 .3rem; font-size:1.2rem}
+.card .sub{color:var(--ink-soft); font-size:.95rem; margin:0 0 .8rem; line-height:1.6}
+.card .meta{
+  margin-top:auto; padding-top:.7rem; border-top:1px solid var(--rule);
+  font-family:"Assistant",system-ui,sans-serif; font-size:.83rem; color:var(--ink-faint);
+  display:flex; gap:.5rem; align-items:baseline; flex-wrap:wrap;
+}
+.age{
+  color:var(--gold); font-weight:600;
+  background:rgba(201,174,116,.13); border-radius:999px; padding:.05rem .55rem;
+}
+
+.collection{
+  border-inline-start:3px solid var(--gold-soft);
+  padding-inline-start:1rem; margin-bottom:1.2rem;
+}
+.collection h2{margin-bottom:.25rem}
+.collection p{margin:0; color:var(--ink-soft); font-size:.98rem; max-width:44rem}
+
+/* ---------------- עמוד כתב ---------------- */
+.doc-head{padding:2.6rem 0 .4rem; max-width:var(--measure); margin-inline:auto}
+.doc-head h1{margin-bottom:.35rem}
+.doc-head .sub{color:var(--ink-soft); font-size:1.05rem; margin:0 0 1rem}
+.stamp{
+  font-family:"Assistant",system-ui,sans-serif; font-size:.87rem;
+  color:var(--ink-soft); line-height:1.9;
+  background:var(--paper-warm); border:1px solid var(--rule);
+  border-radius:10px; padding:.7rem .95rem; display:inline-block;
+}
+.stamp b{color:var(--ink); font-weight:600}
+.stamp .age{margin-inline-start:.2rem}
+
+.tools{
+  display:flex; gap:.5rem; flex-wrap:wrap;
+  max-width:var(--measure); margin:1.3rem auto 0;
+}
+.btn{
+  font-family:"Assistant",system-ui,sans-serif; font-size:.9rem; font-weight:600;
+  text-decoration:none; color:var(--ink);
+  background:var(--card); border:1px solid var(--rule); border-radius:999px;
+  padding:.44rem .95rem; cursor:pointer; display:inline-flex; align-items:center; gap:.4rem;
+  transition:border-color .18s, background .18s, transform .12s;
+}
+.btn:hover{border-color:var(--gold-soft); background:#fff}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--gold); border-color:var(--gold); color:#fff}
+.btn.primary:hover{background:#96762f; border-color:#96762f}
+.btn svg{width:1em; height:1em; flex:none}
+
+article.doc{max-width:var(--measure); margin:2rem auto 0; font-size:1.08rem}
+article.doc p{text-align:justify; text-justify:inter-word}
+article.doc h2{margin:2.2rem 0 .7rem; font-size:1.28rem; color:var(--gold)}
+article.doc .sec-label{
+  font-family:"Assistant",system-ui,sans-serif; font-weight:700;
+  color:var(--gold); font-size:.86rem; letter-spacing:.14em;
+  margin:2.4rem 0 .8rem; display:flex; align-items:center; gap:.8rem;
+}
+article.doc .sec-label::after{content:""; flex:1; height:1px; background:var(--rule)}
+article.doc blockquote{
+  margin:0 0 1.4rem; padding:1.1rem 1.2rem;
+  background:var(--paper-warm); border:1px solid var(--rule);
+  border-inline-start:3px solid var(--gold-soft); border-radius:10px;
+}
+article.doc blockquote p:last-child{margin-bottom:0}
+/* בס"ד שבראש הדף — כפי שכתב אותו */
+article.doc .bsd{
+  text-align:center; color:var(--ink-faint); font-size:.9rem;
+  letter-spacing:.05em; margin-bottom:1.6rem;
+}
+/* שורת מחבר שכתב בראש המסמך */
+article.doc .byline{
+  color:var(--ink-soft); font-size:.98rem; font-style:italic;
+  border-bottom:1px solid var(--rule); padding-bottom:.9rem; margin-bottom:1.6rem;
+}
+/* חתימה בסוף */
+article.doc .sign{
+  margin-top:1.8rem; color:var(--gold); font-size:1.15rem; font-weight:500;
+  text-align:left; font-style:italic;
+}
+article.doc ul{padding-inline-start:1.3rem}
+article.doc li{margin-bottom:.35em}
+
+.docnav{
+  display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+  max-width:var(--measure); margin:3rem auto 0; padding-top:1.4rem;
+  border-top:1px solid var(--rule);
+  font-family:"Assistant",system-ui,sans-serif; font-size:.93rem;
+}
+.docnav a{text-decoration:none; color:var(--ink-soft)}
+.docnav a:hover{color:var(--gold)}
+.docnav .t{display:block; color:var(--ink); font-weight:600; font-size:1rem}
+
+/* ---------------- הקלטות ---------------- */
+.rec{
+  background:var(--card); border:1px solid var(--rule); border-radius:var(--radius);
+  padding:1.05rem 1.2rem; box-shadow:var(--shadow); margin-bottom:.9rem;
+}
+.rec h3{margin:0 0 .15rem; font-size:1.1rem}
+.rec .meta{
+  font-family:"Assistant",system-ui,sans-serif; font-size:.83rem;
+  color:var(--ink-faint); margin-bottom:.75rem;
+}
+.rec audio{width:100%; height:38px}
+.rec .dl{margin-top:.6rem}
+
+/* ---------------- מצב ריק ---------------- */
+.empty{
+  text-align:center; padding:3rem 1.5rem; color:var(--ink-soft);
+  background:var(--paper-warm); border:1px dashed var(--rule); border-radius:var(--radius);
+  max-width:38rem; margin-inline:auto;
+}
+.empty h2{color:var(--ink)}
+
+/* ---------------- כותרת תחתונה ---------------- */
+footer{
+  margin-top:4.5rem; border-top:1px solid var(--rule);
+  background:var(--paper-warm);
+}
+.foot-in{
+  max-width:60rem; margin:0 auto; padding:2rem 1.1rem 2.4rem;
+  font-family:"Assistant",system-ui,sans-serif; font-size:.88rem; color:var(--ink-soft);
+  display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:center;
+}
+.foot-in .build{font-size:.74rem; color:var(--ink-faint); letter-spacing:.03em}
+
+/* ---------------- הדפסה ---------------- */
+@media print{
+  @page{ size:A4; margin:18mm 20mm 20mm; }
+  html,body{background:#fff !important; font-size:11.6pt; line-height:1.72}
+  body::before{display:none}
+  .nav,.tools,.docnav,footer,.no-print{display:none !important}
+  .doc-head{padding-top:0; max-width:none}
+  article.doc{max-width:none; margin-top:1.2rem; font-size:11.6pt}
+  article.doc p{orphans:3; widows:3}
+  article.doc .first::first-letter{color:#000}
+  article.doc h2,.sec-label{break-after:avoid; color:#000}
+  .stamp{background:none; border:0; border-top:1px solid #ccc; border-bottom:1px solid #ccc;
+         border-radius:0; padding:.4rem 0; display:block}
+  .age{background:none; color:#000}
+  blockquote{background:none !important; border:1px solid #ccc !important}
+  .print-foot{
+    display:block !important; margin-top:2.2rem; padding-top:.6rem;
+    border-top:1px solid #ccc; font-size:9pt; color:#555; text-align:center;
+  }
+}
+.print-foot{display:none}
+
+@media (max-width:640px){
+  body{font-size:17px}
+  .hero h1{font-size:2rem}
+  h1{font-size:1.75rem}
+  .nav-in{padding:.5rem .8rem; gap:.6rem}
+  .brand{font-size:.95rem}
+  .nav a.lnk{font-size:.9rem; padding:.3rem .55rem}
+}

@@ -1,0 +1,11 @@
+# קובצי הקול המקוריים - גדולים מדי לגיט (הגרסאות ל-MP3 נשמרות ב-docs\media)
+מוסיקה/
+הקלטות/
+
+# זמניים
+__pycache__/
+*.pyc
+~$*
+build/_icon.html
+Thumbs.db
+desktop.ini
