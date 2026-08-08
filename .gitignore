@@ -12,3 +12,19 @@ desktop.ini
 
 # קיצור דרך מקומי
 *.url
+
+# --- secrets — never commit (managed by session-backup) ---
+node_modules/
+.env
+.env.*
+.DS_Store
+.bw-session
+*.session
+.credentials.json
+*credentials*.json
+*.pem
+*.key
+id_rsa*
+*token*
+*.secret
+secrets.*
