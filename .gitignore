@@ -9,3 +9,6 @@ __pycache__/
 build/_icon.html
 Thumbs.db
 desktop.ini
+
+# קיצור דרך מקומי
+*.url

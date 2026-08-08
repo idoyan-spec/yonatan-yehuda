@@ -629,19 +629,30 @@ def collect_recordings():
                 path = os.path.join(dp, f)
                 name = os.path.splitext(f)[0]
                 title, note = nice_recording_name(name)
+                override_date = None
                 sidecar = path + ".txt"
                 if os.path.exists(sidecar):
                     lines = [l.strip() for l in
                              open(sidecar, encoding="utf-8", errors="replace").read().splitlines()]
                     lines = [l for l in lines if l]
-                    if lines:
-                        title = lines[0]
-                        note = " ".join(lines[1:])
+                    body = []
+                    for k, line in enumerate(lines):
+                        m = re.match(r"^(?:תאריך|date)\s*[:=]\s*"
+                                     r"(\d{4})-(\d{1,2})-(\d{1,2})\s*$", line)
+                        if m:
+                            override_date = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                        elif k == 0:
+                            title = line
+                        else:
+                            body.append(line)
+                    note = " ".join(body)
                 items.append({"path": path, "title": title, "note": note,
+                              "override_date": override_date,
                               "named": bool(title != "הקלטה"),
                               "slug": translit_slug(name) or slugify(name),
-                              "date": recording_date(path, name)})
-    items.sort(key=lambda x: (x["date"] or date(1900, 1, 1)))
+                              "date": override_date or recording_date(path, name)})
+    # לפי סדר כרונולוגי; מה שאין לו תאריך אמין — בסוף
+    items.sort(key=lambda x: (x["date"] is None, x["date"] or date(2100, 1, 1)))
     # הקלטות שאין להן שם — ממוספרות לפי הסדר הכרונולוגי
     k = 0
     for it in items:
@@ -652,13 +663,19 @@ def collect_recordings():
 
 
 def recording_date(path, name):
+    """
+    תאריך ההקלטה. שמות כמו 160731-004 מקודדים את התאריך בעצמם
+    ולכן הם מהימנים. אחרת נופלים על חותמת הקובץ, שיכולה להיות תאריך
+    העתקה ולא ההקלטה - על כן תאריך מחוץ לשנות חייו נחשב לא-ידוע.
+    """
     m = re.match(r"^(\d{2})(\d{2})(\d{2})-\d+$", name)   # 160731-004
     if m:
         try:
             return date(2000 + int(m.group(1)), int(m.group(2)), int(m.group(3)))
         except ValueError:
             pass
-    return mtime_date(path)
+    d = mtime_date(path)
+    return d if BIRTH <= d <= DEATH else None
 
 
 def nice_recording_name(name):
@@ -719,6 +736,8 @@ def write_recordings(recs):
         if d:
             meta.append(f"{heb_date(d)} · {greg_date(d)}")
             meta.append(age_text(d))
+        else:
+            meta.append("תאריך לא ידוע")
         if dur:
             meta.append(dur)
         meta.append(f"{size:.1f} MB")
@@ -736,6 +755,10 @@ def write_recordings(recs):
     <h1>הקלטות</h1>
     <p class="lead narrow" style="margin-inline:0">
       קולו של יונתן. ליד כל הקלטה רשום התאריך העברי והלועזי והגיל שלו באותו יום.
+    </p>
+    <p class="muted narrow" style="margin-inline:0; font-size:.94rem">
+      התאריכים נלקחים משם הקובץ או מחותמת הזמן שלו. היכן שהחותמת אינה אמינה
+      רשום "תאריך לא ידוע" — ואפשר להשלים אותו ידנית.
     </p>
   </section>
   <section>{''.join(rows)}</section>
