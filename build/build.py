@@ -23,7 +23,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from pyluach import dates as pl
 
-from config import BUILD, SITE, DOCS, COLLECTIONS, SKIP, SONGS, VIDEOS
+from config import (BUILD, SITE, DOCS, COLLECTIONS, SKIP, SONGS, VIDEOS,
+                    VIDEOS_CHANNEL)
 from docx_read import read_docx
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -498,6 +499,7 @@ def write_home(items, songs, recs):
     </div>
     <div class="tools" style="justify-content:center; margin-top:2rem">
       <a class="btn primary" href="ketavim.html">אל הכתבים</a>
+      <a class="btn" href="sirtonim.html">סרטונים</a>
       <a class="btn" href="haklatot.html">הקלטות</a>
       <a class="btn" href="shirim.html">שירים</a>
     </div>
@@ -507,7 +509,7 @@ def write_home(items, songs, recs):
 
   <section>
     <h2 style="text-align:center">מה יש כאן</h2>
-    <div class="grid" style="margin-top:1.4rem">
+    <div class="grid four" style="margin-top:1.4rem">
       <a class="card" href="ketavim.html"><h3>הכתבים</h3>
         <p class="sub">{len(items)} חיבורים משנת {e(span)} — ועוד יתווספו.</p>
         <div class="meta"><span>קריאה · הדפסה · הורדה</span></div></a>
@@ -519,6 +521,10 @@ def write_home(items, songs, recs):
         <p class="sub">{"%d שירים ששר והקליט, בערך בגיל %d" % (len(songs), SONGS["approx_age"])
                         if songs else "מקום לשירים שיתווספו"}.</p>
         <div class="meta"><span>האזנה · הורדה</span></div></a>
+      <a class="card" href="sirtonim.html"><h3>סרטונים</h3>
+        <p class="sub">{"%d סרטונים שביים וערך בעצמו, בגיל 12–13" % len(VIDEOS)
+                        if VIDEOS else "מקום לסרטונים שיתווספו"}.</p>
+        <div class="meta"><span>צפייה</span></div></a>
     </div>
   </section>
 </main>"""
@@ -973,6 +979,7 @@ def write_videos():
         return 0
 
     thumbs = os.path.join(OUT, "assets", "thumbs")
+    vids = sorted(vids, key=lambda v: v.get("date") or "9999")
     cards = []
     for v in vids:
         vid = youtube_id(v["url"])
@@ -986,12 +993,14 @@ def write_videos():
 
         meta = []
         if d:
-            meta.append(f"{heb_date(d)} · {greg_date(d)}")
+            meta.append(f"הועלה ב{heb_date(d)} · {greg_date(d)}")
             meta.append(age_text(d))
         elif v.get("age"):
             meta.append(f"בערך בגיל {v['age']}")
         else:
             meta.append("תאריך לא ידוע")
+        if v.get("duration"):
+            meta.append(v["duration"])
 
         poster = (f'<img src="assets/thumbs/{vid}.jpg" alt="" loading="lazy">'
                   if has_thumb else '<div class="vid-blank"></div>')
@@ -1009,6 +1018,9 @@ def write_videos():
   </div>
 </div>""")
 
+    yrs = sorted({v["date"][:4] for v in vids if v.get("date")})
+    vid_span = (yrs[0] if len(yrs) == 1 else f"{yrs[0]}–{yrs[-1]}") if yrs else ""
+
     script = """<script>
 document.addEventListener('click', function (ev) {
   var b = ev.target.closest('.vid-play');
@@ -1025,11 +1037,19 @@ document.addEventListener('click', function (ev) {
 
     body = f"""<main class="wrap">
   <section style="padding-top:2.6rem">
-    <p class="eyebrow">{len(cards)} סרטונים</p>
+    <p class="eyebrow">{len(cards)} סרטונים · {e(vid_span)}</p>
     <h1>סרטונים</h1>
     <p class="lead narrow" style="margin-inline:0">
-      סרטונים של יונתן. לחיצה על התמונה מפעילה את הסרטון כאן בעמוד.
+      סרטונים שיונתן ביים, ערך והעלה לערוץ היוטיוב שלו. לחיצה על התמונה
+      מפעילה את הסרטון כאן בעמוד.
     </p>
+    <p class="muted narrow" style="margin-inline:0; font-size:.94rem">
+      התאריך הוא מועד ההעלאה ליוטיוב — הצילום עצמו יכול היה להיות מוקדם יותר.
+    </p>
+    <div class="tools" style="margin-inline:0">
+      <a class="btn" href="{e(VIDEOS_CHANNEL)}" target="_blank" rel="noopener">
+        הערוץ של יונתן ביוטיוב ↗</a>
+    </div>
   </section>
   <section><div class="vid-grid">{''.join(cards)}</div></section>
 </main>

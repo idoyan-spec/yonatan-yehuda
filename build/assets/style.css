@@ -126,6 +126,7 @@ p{margin:0 0 1.15em}
 
 /* ---------------- כרטיסים ---------------- */
 .grid{display:grid; gap:1rem; grid-template-columns:repeat(auto-fill, minmax(255px,1fr))}
+.grid.four{grid-template-columns:repeat(auto-fit, minmax(205px,1fr))}
 .card{
   background:var(--card); border:1px solid var(--rule); border-radius:var(--radius);
   padding:1.15rem 1.25rem 1.05rem; box-shadow:var(--shadow);

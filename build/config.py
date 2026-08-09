@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """הגדרות האתר וקוריאציה ידנית של המסמכים."""
 
-BUILD = "2026-08-09 04:40 v6 videos-og"
+BUILD = "2026-08-09 04:40 v7 sirtonim"
 
 SITE = {
     "name": "יונתן יהודה ינקלוביץ ז\"ל",
@@ -107,9 +107,44 @@ SONGS = {
 #   date    - "YYYY-MM-DD" אם ידוע (ממנו מחושבים התאריך העברי והגיל); אחרת None
 #   age     - גיל משוער, כשאין תאריך מדויק (למשל 16). אפשר להשאיר None
 #   note    - שורת הסבר קצרה, לא חובה
+# התאריכים הם תאריכי ההעלאה ליוטיוב (בשעון ישראל), ולכן הכיתוב באתר
+# הוא "הועלה ב..." ולא "נוצר ב..." - סרטון יכול היה להיות מצולם קודם.
+VIDEOS_CHANNEL = "https://www.youtube.com/@yonaclip6092"
 VIDEOS = [
-    # {"url": "https://www.youtube.com/watch?v=XXXXXXXXXXX",
-    #  "title": "שם הסרטון", "date": "2016-05-12", "age": None, "note": ""},
+    {"url": "https://www.youtube.com/watch?v=xXk4OsoldpA",
+     "title": "דוסי סטייל", "date": "2013-01-31", "duration": "3:15",
+     "note": ""},
+    {"url": "https://www.youtube.com/watch?v=prgetDt7pTw",
+     "title": "ירי — פורים שמח!!", "date": "2013-02-25", "duration": "1:47",
+     "note": "לפורים. הועלה בשושן פורים תשע\"ג."},
+    {"url": "https://www.youtube.com/watch?v=lpblks2QhFY",
+     "title": "צדקה", "date": "2013-02-28", "duration": "0:16",
+     "note": "מערכון קצר."},
+    {"url": "https://www.youtube.com/watch?v=cPbk8seq5_A",
+     "title": "דמי חנוכה", "date": "2013-02-28", "duration": "1:42",
+     "note": ""},
+    {"url": "https://www.youtube.com/watch?v=w90m4HdN5dA",
+     "title": "מתיקיית הנסיונות… קסם", "date": "2013-03-09", "duration": "0:01",
+     "note": "ניסיונות בעריכת וידאו."},
+    {"url": "https://www.youtube.com/watch?v=xyyjOJi6QDM",
+     "title": "מתיקיית הניסיונות… טקסט 3D", "date": "2013-03-18", "duration": "0:04",
+     "note": "ניסיונות בעריכת וידאו."},
+    {"url": "https://www.youtube.com/watch?v=bPOlKogDCRo",
+     "title": "כמה חורים יש במצה??", "date": "2013-03-19", "duration": "1:09",
+     "note": "לפסח."},
+    {"url": "https://www.youtube.com/watch?v=bzyee8b74YY",
+     "title": "חיסול חמץ", "date": "2013-03-24", "duration": "3:04",
+     "note": "לפסח. הועלה בי\"ג בניסן, ערב בדיקת חמץ."},
+    {"url": "https://www.youtube.com/watch?v=OpAQKdH5haU",
+     "title": "שורשים", "date": "2013-06-07", "duration": "13:28",
+     "note": "עבודת שורשים על המשפחה."},
+    {"url": "https://www.youtube.com/watch?v=6-vvznKXfE0",
+     "title": "יונתן פולארד בן 59 בכלא", "date": "2013-07-15", "duration": "0:27",
+     "note": "סרטון שהכין למען שחרורו של יונתן פולארד."},
+    {"url": "https://www.youtube.com/watch?v=eGAp8pdecuI",
+     "title": "דב ברנרד גרנק ז\"ל — 40 שנה למלחמת יום הכיפורים",
+     "date": "2013-09-20", "duration": "17:09",
+     "note": "סרט שיונתן הכין עם אחיו עמיחי לזכר הדוד דבלה, שנפל במלחמת יום הכיפורים."},
 ]
 
 COLLECTIONS = {
