@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from pyluach import dates as pl
 
-from config import BUILD, SITE, DOCS, COLLECTIONS, SKIP
+from config import BUILD, SITE, DOCS, COLLECTIONS, SKIP, SONGS
 from docx_read import read_docx
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -475,8 +475,9 @@ def write_home(items, songs, recs):
       <p>כשיונתן נהרג, מצאנו את הדברים שכתב. הוא היה אז ילד — בן {e(age_span)} —
          והדפים מלאים בשאלות גדולות ובתשובות שחיפש לעצמו: על תפילה, על שמחה,
          על איך לזכור את מה שחשוב בכל רגע ורגע.</p>
-      <p>האתר הזה נועד כדי שאפשר יהיה לקרוא אותם. ליד כל כתב רשום התאריך שבו נכתב
-         — עברי ולועזי — והגיל שלו באותו יום. הכול פתוח לקריאה, להדפסה ולהורדה.</p>
+      <p>האתר הזה נועד כדי שאפשר יהיה לקרוא אותם, ולשמוע אותו. ליד כל כתב,
+         שיר והקלטה רשום התאריך — עברי ולועזי — והגיל שלו באותו יום.
+         הכול פתוח לקריאה, להאזנה, להדפסה ולהורדה.</p>
     </div>
     <div class="tools" style="justify-content:center; margin-top:2rem">
       <a class="btn primary" href="ketavim.html">אל הכתבים</a>
@@ -494,11 +495,13 @@ def write_home(items, songs, recs):
         <p class="sub">{len(items)} חיבורים משנת {e(span)}.</p>
         <div class="meta"><span>קריאה · הדפסה · הורדה</span></div></a>
       <a class="card" href="haklatot.html"><h3>הקלטות</h3>
-        <p class="sub">{"%d הקלטות קול" % len(recs) if recs else "טרם נוספו הקלטות"}.</p>
+        <p class="sub">{"%d הקלטות של קולו — לימוד, שירה ורגעים מהבית" % len(recs)
+                        if recs else "טרם נוספו הקלטות"}.</p>
         <div class="meta"><span>האזנה · הורדה</span></div></a>
       <a class="card" href="shirim.html"><h3>שירים</h3>
-        <p class="sub">{"%d שירים" % len(songs) if songs else "מקום לשירים שיתווספו"}.</p>
-        <div class="meta"><span>קריאה · הדפסה</span></div></a>
+        <p class="sub">{"%d שירים ששר והקליט, בערך בגיל %d" % (len(songs), SONGS["approx_age"])
+                        if songs else "מקום לשירים שיתווספו"}.</p>
+        <div class="meta"><span>האזנה · הורדה</span></div></a>
     </div>
   </section>
 </main>"""
@@ -520,9 +523,17 @@ def collect_songs():
             path = os.path.join(dp, f)
             ext = os.path.splitext(f)[1].lower()
             name = os.path.splitext(f)[0]
-            item = {"path": path, "title": name, "ext": ext,
-                    "slug": translit_slug(name), "created": None, "blocks": None}
-            if ext == ".docx":
+            item = {"path": path, "title": name, "ext": ext, "kind": "file",
+                    "slug": translit_slug(name), "created": None, "blocks": None,
+                    "note": ""}
+            if ext in AUDIO_EXT:
+                item["kind"] = "audio"
+                title, note, d = read_sidecar(path, name, "")
+                item["title"] = title or name
+                item["note"] = note
+                item["created"] = d or audio_tag_date(path)
+            elif ext == ".docx":
+                item["kind"] = "text"
                 try:
                     item["blocks"] = read_docx(path)
                     item["created"] = docx_created(path)
@@ -530,6 +541,9 @@ def collect_songs():
                     print(f"  ! שיר {f}: {exc}")
                     continue
             elif ext in (".txt", ".md"):
+                if os.path.exists(os.path.splitext(path)[0]) or _is_sidecar(path):
+                    continue          # קובץ תיאור של שיר אחר, לא שיר בפני עצמו
+                item["kind"] = "text"
                 txt = open(path, encoding="utf-8", errors="replace").read()
                 item["blocks"] = [{"type": "p", "text": p, "runs": [{"t": p}]}
                                   for p in txt.split("\n") if p.strip()]
@@ -539,7 +553,57 @@ def collect_songs():
             else:
                 continue
             items.append(item)
+    items.sort(key=lambda x: (x["kind"] != "audio", x["title"]))
     return items
+
+
+def _is_sidecar(path):
+    """קובץ כמו 'שיר.mp3.txt' הוא תיאור לשיר, לא פריט בפני עצמו."""
+    stem = os.path.splitext(path)[0]
+    return os.path.splitext(stem)[1].lower() in AUDIO_EXT
+
+
+def read_sidecar(path, name, default_title):
+    """קורא קובץ .txt צמוד: שורה 1 = כותרת, 'תאריך: YYYY-MM-DD' = תאריך, השאר = הסבר."""
+    title, note, d = default_title or name, "", None
+    sidecar = path + ".txt"
+    if not os.path.exists(sidecar):
+        return title, note, d
+    lines = [l.strip() for l in
+             open(sidecar, encoding="utf-8", errors="replace").read().splitlines()]
+    lines = [l for l in lines if l]
+    body = []
+    for k, line in enumerate(lines):
+        m = re.match(r"^(?:תאריך|date)\s*[:=]\s*(\d{4})-(\d{1,2})-(\d{1,2})\s*$", line)
+        if m:
+            d = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        elif k == 0:
+            title = line
+        else:
+            body.append(line)
+    return title, " ".join(body), d
+
+
+def audio_tag_date(path):
+    """
+    תאריך מתוך התגים המוטבעים בקובץ הקול (מכשירי הקלטה רבים כותבים אותו).
+    מוחזר רק אם הוא נופל בתוך שנות חייו של יונתן - אחרת הוא חסר משמעות.
+    """
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "quiet", "-show_entries",
+             "format_tags=date,creation_time,TDRC,year", "-of", "default=nw=1",
+             path], capture_output=True, text=True, timeout=60).stdout
+    except Exception:
+        return None
+    for m in re.finditer(r"(\d{4})-(\d{1,2})-(\d{1,2})", out):
+        try:
+            d = date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            continue
+        if BIRTH <= d <= DEATH:
+            return d
+    return None
 
 
 def mtime_date(path):
@@ -570,11 +634,19 @@ def write_songs(songs):
         return
 
     os.makedirs(os.path.join(OUT, "s"), exist_ok=True)
-    cards = []
+    media = os.path.join(OUT, "media")
+    os.makedirs(media, exist_ok=True)
+
+    rows, cards = [], []
     for it in songs:
         d = it["created"]
         meta = (f'<div class="meta"><span>{e(heb_date(d))}</span><span>·</span>'
                 f'<span>{d.year}</span><span class="age">{e(age_short(d))}</span></div>') if d else ""
+
+        if it["kind"] == "audio":
+            rows.append(song_row(it, media))
+            continue
+
         if it["blocks"] is not None:
             shutil.copy2(it["path"], os.path.join(OUT, "s", os.path.basename(it["path"])))
             body = f"""<main class="wrap">
@@ -603,15 +675,65 @@ def write_songs(songs):
         cards.append(f'<a class="card" href="{href}"><h3>{e(it["title"])}</h3>'
                      f'<p class="sub">{e(it["ext"].lstrip("."))}</p>{meta}</a>')
 
+    approx = SONGS.get("approx_age")
+    approx_line = ""
+    if approx and rows:
+        y0 = date(BIRTH.year + approx, BIRTH.month, BIRTH.day)
+        y1 = date(BIRTH.year + approx + 1, BIRTH.month, BIRTH.day)
+        hy0 = pl.GregorianDate(y0.year, y0.month, y0.day).to_heb().hebrew_date_string()
+        hy1 = pl.GregorianDate(y1.year, y1.month, y1.day).to_heb().hebrew_date_string()
+        approx_line = (f'<p class="muted narrow" style="margin-inline:0; font-size:.94rem">'
+                       f'לקובצי הקול אין תאריך מדויק שנשמר, ולכן הגיל כאן משוער — '
+                       f'גיל {approx} נופל בין {e(hy0.split()[-1])} ל{e(hy1.split()[-1])} '
+                       f'({y0.year}–{y1.year}).</p>')
+
     body = f"""<main class="wrap">
   <section style="padding-top:2.6rem">
     <p class="eyebrow">{len(songs)} שירים</p>
     <h1>שירים</h1>
+    <p class="lead narrow" style="margin-inline:0">{e(SONGS.get('blurb', ''))}</p>
+    {approx_line}
   </section>
-  <section><div class="grid">{''.join(cards)}</div></section>
+  {f'<section>{"".join(rows)}</section>' if rows else ''}
+  {f'<section><div class="grid">{"".join(cards)}</div></section>' if cards else ''}
 </main>"""
     write(os.path.join(OUT, "shirim.html"),
-          shell(f"שירים · {SITE['short']}", body, "shirim.html"))
+          shell(f"שירים · {SITE['short']}", body, "shirim.html",
+                desc="שירים שיונתן יהודה ז\"ל שר והקליט בילדותו."))
+
+
+def song_row(it, media):
+    """כרטיס שיר עם נגן — כמו בעמוד ההקלטות."""
+    dst = os.path.join(media, it["slug"] + ".mp3")
+    if not os.path.exists(dst):
+        print(f"  ♪ ממיר {os.path.basename(it['path'])} …")
+        res = subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error", "-i", it["path"], "-vn",
+             "-ar", "44100", "-b:a", "128k", dst], capture_output=True, text=True)
+        if res.returncode != 0:
+            print(f"  ! המרה נכשלה: {res.stderr[:200]}")
+            return ""
+    dur = fmt_dur(ffprobe_duration(dst))
+    size = os.path.getsize(dst) / 1048576
+    d = it["created"]
+    meta = []
+    if d:
+        meta.append(f"{heb_date(d)} · {greg_date(d)}")
+        meta.append(age_text(d))
+    elif SONGS.get("approx_age"):
+        meta.append(f"בערך בגיל {SONGS['approx_age']}")
+    if dur:
+        meta.append(dur)
+    meta.append(f"{size:.1f} MB")
+    note = (f'<p class="muted" style="margin:.2rem 0 .7rem">{e(it["note"])}</p>'
+            if it.get("note") else "")
+    return f"""<div class="rec">
+  <h3>{e(it['title'])}</h3>
+  <div class="meta">{e(' · '.join(meta))}</div>
+  {note}
+  <audio controls preload="none" src="media/{e(it['slug'])}.mp3"></audio>
+  <div class="dl"><a class="btn" href="media/{e(it['slug'])}.mp3" download>{I_DL} הורדה</a></div>
+</div>"""
 
 
 # ─────────────────────────────  הקלטות  ─────────────────────────────
@@ -674,6 +796,9 @@ def recording_date(path, name):
             return date(2000 + int(m.group(1)), int(m.group(2)), int(m.group(3)))
         except ValueError:
             pass
+    tagged = audio_tag_date(path)          # תג תאריך מוטבע בקובץ - מהימן
+    if tagged:
+        return tagged
     d = mtime_date(path)
     return d if BIRTH <= d <= DEATH else None
 
