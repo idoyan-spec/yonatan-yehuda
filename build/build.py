@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from pyluach import dates as pl
 
-from config import BUILD, SITE, DOCS, COLLECTIONS, SKIP, SONGS
+from config import BUILD, SITE, DOCS, COLLECTIONS, SKIP, SONGS, VIDEOS
 from docx_read import read_docx
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -111,11 +111,15 @@ def translit_slug(s):
 
 
 NAV = [("index.html", "בית"), ("ketavim.html", "הכתבים"),
-       ("shirim.html", "שירים"), ("haklatot.html", "הקלטות")]
+       ("shirim.html", "שירים"), ("haklatot.html", "הקלטות"),
+       ("sirtonim.html", "סרטונים")]
 
 
-def shell(title, body, current, depth=0, desc="", extra_head=""):
+def shell(title, body, current, depth=0, desc="", extra_head="", page=None):
     up = "../" * depth
+    base = SITE["base_url"]
+    og_img = base + "assets/og.jpg"
+    og_url = base + (page if page is not None else current)
     nav = "".join(
         f'<li><a class="lnk" href="{up}{href}"'
         f'{" aria-current=\"page\"" if href == current else ""}>{e(label)}</a></li>'
@@ -130,8 +134,20 @@ def shell(title, body, current, depth=0, desc="", extra_head=""):
 <meta property="og:title" content="{e(title)}">
 <meta property="og:description" content="{e(desc or SITE['tagline'])}">
 <meta property="og:type" content="website">
-<link rel="icon" href="{up}assets/icon.svg" type="image/svg+xml">
-<link rel="alternate icon" href="{up}assets/favicon.ico">
+<meta property="og:site_name" content="{e(SITE['name'])}">
+<meta property="og:locale" content="he_IL">
+<meta property="og:url" content="{e(og_url)}">
+<meta property="og:image" content="{e(og_img)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="{e(SITE['name'])}">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="{e(og_img)}">
+<meta name="theme-color" content="#FBF8F2">
+<link rel="icon" type="image/png" sizes="32x32" href="{up}assets/favicon-32.png">
+<link rel="icon" href="{up}assets/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="{up}assets/apple-touch-icon.png">
+<link rel="manifest" href="{up}site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
@@ -400,7 +416,7 @@ def write_doc_pages(items):
   <nav class="docnav no-print">{nav_prev}{nav_next}</nav>
 </main>"""
         page = shell(f"{it['title']} · {SITE['short']}", body, "ketavim.html",
-                     depth=1, desc=excerpt(it))
+                     depth=1, desc=excerpt(it), page=f"k/{it['slug']}.html")
         with open(os.path.join(OUT, "k", f"{it['slug']}.html"), "w", encoding="utf-8") as f:
             f.write(page)
 
@@ -430,8 +446,9 @@ def write_index_page(items):
     <p class="eyebrow">{len(items)} כתבים · {e(span)}</p>
     <h1>הכתבים</h1>
     <p class="lead narrow" style="margin-inline:0">
-      כל מה שיונתן כתב, לפי סדר. ליד כל כתב מופיע התאריך שבו נכתב — עברי ולועזי —
-      והגיל שלו באותו יום. אפשר לקרוא כאן, להדפיס בלחיצה אחת, או להוריד כקובץ.
+      אלה אינם כל הכתבים — התחלנו להעלות אותם, ועוד יתווספו.
+      ליד כל כתב מופיע התאריך שבו נכתב — עברי ולועזי — והגיל שלו באותו יום.
+      אפשר לקרוא כאן, להדפיס בלחיצה אחת, או להוריד כקובץ.
     </p>
     <div class="tools" style="margin-inline:0">
       <a class="btn" href="ketavim-all.pdf" download>{I_DL} כל הכתבים בקובץ PDF אחד</a>
@@ -492,7 +509,7 @@ def write_home(items, songs, recs):
     <h2 style="text-align:center">מה יש כאן</h2>
     <div class="grid" style="margin-top:1.4rem">
       <a class="card" href="ketavim.html"><h3>הכתבים</h3>
-        <p class="sub">{len(items)} חיבורים משנת {e(span)}.</p>
+        <p class="sub">{len(items)} חיבורים משנת {e(span)} — ועוד יתווספו.</p>
         <div class="meta"><span>קריאה · הדפסה · הורדה</span></div></a>
       <a class="card" href="haklatot.html"><h3>הקלטות</h3>
         <p class="sub">{"%d הקלטות של קולו — לימוד, שירה ורגעים מהבית" % len(recs)
@@ -893,6 +910,136 @@ def write_recordings(recs):
                 desc="הקלטות קול של יונתן יהודה ז\"ל."))
 
 
+# ─────────────────────────────  סרטונים  ─────────────────────────────
+
+YT_ID = re.compile(
+    r"(?:youtu\.be/|youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/|v/))"
+    r"([A-Za-z0-9_-]{11})")
+
+
+def youtube_id(url):
+    m = YT_ID.search(url or "")
+    return m.group(1) if m else None
+
+
+def fetch_thumb(vid, dst_dir):
+    """
+    מוריד את התמונה הממוזערת של הסרטון ושומר אותה באתר.
+    כך העמוד נטען מהר, ויוטיוב נטען רק כשלוחצים על הסרטון.
+    """
+    import urllib.request
+    os.makedirs(dst_dir, exist_ok=True)
+    dst = os.path.join(dst_dir, f"{vid}.jpg")
+    if os.path.exists(dst):
+        return True
+    for name in ("maxresdefault", "sddefault", "hqdefault"):
+        try:
+            url = f"https://img.youtube.com/vi/{vid}/{name}.jpg"
+            with urllib.request.urlopen(url, timeout=25) as r:
+                data = r.read()
+            if len(data) > 2000:          # hqdefault ריק מוחזר כתמונה זעירה
+                open(dst, "wb").write(data)
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def write_videos():
+    vids = [v for v in VIDEOS if youtube_id(v.get("url"))]
+    dropped = len(VIDEOS) - len(vids)
+    if dropped:
+        print(f"  ! {dropped} סרטונים דולגו — לא זוהה מזהה יוטיוב בקישור")
+
+    if not vids:
+        body = """<main class="wrap">
+  <section style="padding-top:2.6rem">
+    <p class="eyebrow">סרטונים</p>
+    <h1>סרטונים</h1>
+    <p class="lead narrow" style="margin-inline:0">העמוד הזה מחכה לסרטונים של יונתן.</p>
+  </section>
+  <section>
+    <div class="empty">
+      <h2>עוד לא נוספו סרטונים</h2>
+      <p>הסרטונים יישבו ביוטיוב והאתר רק יציג אותם — בלי להעלות קובצי וידאו כבדים.
+         מספיק להוסיף את הקישורים לרשימת <b>VIDEOS</b> שבקובץ
+         <b>build\\config.py</b> ולהריץ מחדש את הבנייה.</p>
+    </div>
+  </section>
+</main>"""
+        write(os.path.join(OUT, "sirtonim.html"),
+              shell(f"סרטונים · {SITE['short']}", body, "sirtonim.html",
+                    desc="סרטונים של יונתן יהודה ז\"ל."))
+        return 0
+
+    thumbs = os.path.join(OUT, "assets", "thumbs")
+    cards = []
+    for v in vids:
+        vid = youtube_id(v["url"])
+        has_thumb = fetch_thumb(vid, thumbs)
+        d = None
+        if v.get("date"):
+            y, m, dd = (int(x) for x in v["date"].split("-"))
+            d = date(y, m, dd)
+            if not (BIRTH <= d <= DEATH):
+                d = None
+
+        meta = []
+        if d:
+            meta.append(f"{heb_date(d)} · {greg_date(d)}")
+            meta.append(age_text(d))
+        elif v.get("age"):
+            meta.append(f"בערך בגיל {v['age']}")
+        else:
+            meta.append("תאריך לא ידוע")
+
+        poster = (f'<img src="assets/thumbs/{vid}.jpg" alt="" loading="lazy">'
+                  if has_thumb else '<div class="vid-blank"></div>')
+        note = (f'<p class="muted" style="margin:.2rem 0 0">{e(v["note"])}</p>'
+                if v.get("note") else "")
+        cards.append(f"""<div class="vid">
+  <button class="vid-play" data-id="{e(vid)}" aria-label="הפעלת הסרטון {e(v['title'])}">
+    {poster}<span class="vid-btn" aria-hidden="true"></span>
+  </button>
+  <div class="vid-body">
+    <h3>{e(v['title'])}</h3>
+    <div class="meta">{e(' · '.join(meta))}</div>
+    {note}
+    <a class="vid-link" href="{e(v['url'])}" target="_blank" rel="noopener">פתיחה ביוטיוב ↗</a>
+  </div>
+</div>""")
+
+    script = """<script>
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest('.vid-play');
+  if (!b) return;
+  var f = document.createElement('iframe');
+  f.src = 'https://www.youtube-nocookie.com/embed/' + b.dataset.id + '?autoplay=1&rel=0';
+  f.title = b.getAttribute('aria-label') || '';
+  f.allow = 'accelerometer; autoplay; encrypted-media; picture-in-picture';
+  f.allowFullscreen = true;
+  f.loading = 'lazy';
+  b.replaceWith(f);
+});
+</script>"""
+
+    body = f"""<main class="wrap">
+  <section style="padding-top:2.6rem">
+    <p class="eyebrow">{len(cards)} סרטונים</p>
+    <h1>סרטונים</h1>
+    <p class="lead narrow" style="margin-inline:0">
+      סרטונים של יונתן. לחיצה על התמונה מפעילה את הסרטון כאן בעמוד.
+    </p>
+  </section>
+  <section><div class="vid-grid">{''.join(cards)}</div></section>
+</main>
+{script}"""
+    write(os.path.join(OUT, "sirtonim.html"),
+          shell(f"סרטונים · {SITE['short']}", body, "sirtonim.html",
+                desc="סרטונים של יונתן יהודה ז\"ל."))
+    return len(cards)
+
+
 # ─────────────────────────────  PDF ו-ZIP  ─────────────────────────────
 
 def make_pdfs(items):
@@ -968,6 +1115,17 @@ def make_zip(items):
 
 # ─────────────────────────────  נכסים  ─────────────────────────────
 
+def write_sitemap(items):
+    urls = ["index.html", "ketavim.html", "shirim.html",
+            "haklatot.html", "sirtonim.html"]
+    urls += [f"k/{it['slug']}.html" for it in items]
+    body = "".join(f"<url><loc>{SITE['base_url']}{u}</loc></url>" for u in urls)
+    write(os.path.join(OUT, "sitemap.xml"),
+          '<?xml version="1.0" encoding="UTF-8"?>\n'
+          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+          f'{body}</urlset>\n')
+
+
 def write(path, text):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -995,8 +1153,122 @@ def copy_assets():
         except Exception as exc:
             print(f"  ! עיבוד התמונה נכשל ({exc}) — מעתיק כמות שהיא")
             shutil.copy2(PHOTO, os.path.join(dst, "yonatan.jpg"))
+    make_favicons(dst)
+    make_og_image(dst)
     write(os.path.join(OUT, ".nojekyll"), "")
-    write(os.path.join(OUT, "robots.txt"), "User-agent: *\nAllow: /\n")
+    write(os.path.join(OUT, "robots.txt"),
+          "User-agent: *\nAllow: /\n\nSitemap: " + SITE["base_url"] + "sitemap.xml\n")
+
+
+def face_crop(size):
+    """חיתוך ריבועי סביב פניו של יונתן, בגודל המבוקש."""
+    from PIL import Image
+    im = Image.open(PHOTO)
+    w, h = im.size
+    f = SITE["face"]
+    s = int(min(w, h) * f["side"])
+    x = max(0, min(w - s, int(w * f["cx"] - s / 2)))
+    y = max(0, min(h - s, int(h * f["cy"] - s / 2)))
+    return im.crop((x, y, x + s, y + s)).resize((size, size), Image.LANCZOS).convert("RGB")
+
+
+def make_favicons(dst):
+    """אייקון הדפדפן — תמונתו של יונתן, חתוכה בעיגול."""
+    if not os.path.exists(PHOTO):
+        return
+    try:
+        from PIL import Image, ImageDraw
+        base = face_crop(512)
+        mask = Image.new("L", (2048, 2048), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, 2047, 2047), fill=255)
+        mask = mask.resize((512, 512), Image.LANCZOS)
+        round_ = Image.new("RGBA", (512, 512), (0, 0, 0, 0))
+        round_.paste(base, (0, 0), mask)
+
+        round_.save(os.path.join(dst, "icon-512.png"))
+        round_.resize((192, 192), Image.LANCZOS).save(os.path.join(dst, "icon-192.png"))
+        round_.resize((32, 32), Image.LANCZOS).save(os.path.join(dst, "favicon-32.png"))
+        round_.save(os.path.join(dst, "favicon.ico"),
+                    sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64),
+                           (128, 128), (256, 256)])
+        # apple-touch-icon מוצג כריבוע עם פינות מעוגלות - בלי חיתוך עיגול
+        base.resize((180, 180), Image.LANCZOS).save(
+            os.path.join(dst, "apple-touch-icon.png"))
+        # מניפסט קטן, כדי שהוספה למסך הבית בטלפון תראה נכון
+        write(os.path.join(OUT, "site.webmanifest"), json.dumps({
+            "name": SITE["name"], "short_name": SITE["short"],
+            "icons": [{"src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                      {"src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png"}],
+            "theme_color": "#FBF8F2", "background_color": "#FBF8F2",
+            "display": "standalone", "lang": "he", "dir": "rtl",
+        }, ensure_ascii=False, indent=1))
+    except Exception as exc:
+        print(f"  ! יצירת האייקונים נכשלה: {exc}")
+
+
+def make_og_image(dst):
+    """
+    תמונת התצוגה המקדימה שמופיעה כששולחים את הקישור בוואטסאפ / פייסבוק / מייל.
+    נבנית ב-1200x630 מתוך תמונתו של יונתן, עם שמו והתאריכים.
+    """
+    if not os.path.exists(PHOTO):
+        return
+    out = os.path.join(dst, "og.jpg")
+    try:
+        from PIL import Image
+        face_crop(760).save(os.path.join(dst, "_ogface.jpg"), quality=94)
+
+        html = f"""<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700&family=Assistant:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  *{{margin:0;padding:0;box-sizing:border-box}}
+  body{{width:1200px;height:630px;overflow:hidden;
+       background:#FBF8F2;
+       font-family:"Frank Ruhl Libre",serif;color:#2E2A25;
+       display:flex;align-items:center;gap:64px;padding:0 78px}}
+  .glow{{position:absolute;inset:0;
+       background:radial-gradient(760px 460px at 88% -12%, rgba(201,174,116,.20), transparent 62%),
+                  radial-gradient(620px 420px at 4% 116%, rgba(164,130,60,.14), transparent 62%);}}
+  .txt{{flex:1;position:relative}}
+  h1{{font-size:69px;line-height:1.16;font-weight:700;letter-spacing:-.5px}}
+  .rule{{width:112px;height:3px;background:#C9AE74;margin:26px 0 24px;border-radius:2px}}
+  .d{{font-family:"Assistant",sans-serif;font-size:29px;color:#6E655A;line-height:1.62}}
+  .d b{{color:#2E2A25;font-weight:600}}
+  .tag{{font-family:"Assistant",sans-serif;font-size:26px;color:#A4823C;
+       font-weight:600;margin-top:24px;letter-spacing:.6px}}
+  .ph{{width:384px;height:384px;border-radius:50%;overflow:hidden;flex:none;
+      position:relative;box-shadow:0 26px 64px rgba(70,58,40,.20);border:9px solid #fff}}
+  .ph img{{width:100%;height:100%;object-fit:cover;display:block}}
+</style></head><body>
+<div class="glow"></div>
+<div class="txt">
+  <h1>יונתן יהודה<br>ינקלוביץ ז״ל</h1>
+  <div class="rule"></div>
+  <div class="d"><b>{e(heb_date(BIRTH))}</b> – <b>{e(heb_date(DEATH))}</b><br>
+       {e(greg_date(BIRTH))} – {e(greg_date(DEATH))}</div>
+  <div class="tag">כתבים · שירים · הקלטות · סרטונים</div>
+</div>
+<div class="ph"><img src="_ogface.jpg"></div>
+</body></html>"""
+        tmp = os.path.join(dst, "_og.html")
+        write(tmp, html)
+
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            b = p.chromium.launch()
+            pg = b.new_page(viewport={"width": 1200, "height": 630})
+            pg.goto("file:///" + tmp.replace("\\", "/"))
+            pg.wait_for_timeout(1200)          # המתנה לטעינת הגופנים
+            pg.screenshot(path=os.path.join(dst, "_og.png"))
+            b.close()
+        Image.open(os.path.join(dst, "_og.png")).convert("RGB").save(
+            out, quality=88, optimize=True)
+        for junk in ("_og.html", "_og.png", "_ogface.jpg"):
+            p_ = os.path.join(dst, junk)
+            if os.path.exists(p_):
+                os.remove(p_)
+    except Exception as exc:
+        print(f"  ! יצירת תמונת השיתוף נכשלה: {exc}")
 
 
 # ─────────────────────────────  ראשי  ─────────────────────────────
@@ -1025,6 +1297,9 @@ def main():
     write_home(items, songs, recs)
     write_songs(songs)
     write_recordings(recs)
+    nvid = write_videos()
+    print(f"  · {nvid} סרטונים")
+    write_sitemap(items)
 
     print("  · מייצר PDF …")
     make_pdfs(items)

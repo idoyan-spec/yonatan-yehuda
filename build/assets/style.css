@@ -238,6 +238,42 @@ article.doc li{margin-bottom:.35em}
 .rec audio{width:100%; height:38px}
 .rec .dl{margin-top:.6rem}
 
+/* ---------------- סרטונים ---------------- */
+.vid-grid{display:grid; gap:1.4rem; grid-template-columns:repeat(auto-fill, minmax(320px,1fr))}
+.vid{
+  background:var(--card); border:1px solid var(--rule); border-radius:var(--radius);
+  box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column;
+}
+.vid > iframe, .vid-play{
+  display:block; width:100%; aspect-ratio:16/9; border:0;
+  background:var(--paper-warm); padding:0; margin:0;
+}
+.vid-play{position:relative; cursor:pointer; overflow:hidden}
+.vid-play img{width:100%; height:100%; object-fit:cover; transition:transform .35s ease}
+.vid-play:hover img{transform:scale(1.03)}
+.vid-blank{width:100%; height:100%; background:var(--paper-warm)}
+.vid-btn{
+  position:absolute; inset:0; margin:auto; width:66px; height:46px; border-radius:12px;
+  background:rgba(46,42,37,.62); backdrop-filter:blur(2px);
+  transition:background .2s ease;
+}
+.vid-btn::after{
+  content:""; position:absolute; inset:0; margin:auto; width:0; height:0;
+  border-block:9px solid transparent; border-inline-end:15px solid #fff;
+  border-inline-start:0;
+}
+.vid-play:hover .vid-btn{background:var(--gold)}
+.vid-body{padding:1rem 1.15rem 1.15rem}
+.vid-body h3{margin:0 0 .2rem; font-size:1.12rem}
+.vid-body .meta{
+  font-family:"Assistant",system-ui,sans-serif; font-size:.83rem; color:var(--ink-faint);
+}
+.vid-link{
+  display:inline-block; margin-top:.7rem; font-family:"Assistant",system-ui,sans-serif;
+  font-size:.86rem; color:var(--gold); text-decoration:none; font-weight:600;
+}
+.vid-link:hover{text-decoration:underline}
+
 /* ---------------- מצב ריק ---------------- */
 .empty{
   text-align:center; padding:3rem 1.5rem; color:var(--ink-soft);
